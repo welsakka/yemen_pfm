@@ -6,6 +6,8 @@ import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint;
 import com.facebook.react.defaults.DefaultReactActivityDelegate;
 import android.content.Intent;
 import com.tkporter.sendsms.SendSMSPackage;
+import com.react.SmsPackage;
+import android.os.Bundle;
 
 public class MainActivity extends ReactActivity {
 
@@ -41,4 +43,10 @@ public class MainActivity extends ReactActivity {
     //probably some other stuff here
     SendSMSPackage.getInstance().onActivityResult(requestCode, resultCode, data);
   }
+
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(null);
+  }
 }
+

@@ -10,6 +10,7 @@ import com.facebook.react.defaults.DefaultReactNativeHost;
 import com.facebook.soloader.SoLoader;
 import java.util.List;
 import com.tkporter.sendsms.SendSMSPackage;
+import com.react.SmsPackage;
 
 public class MainApplication extends Application implements ReactApplication {
 

@@ -1,8 +1,16 @@
 import React from "react";
-import { View, Text, TextInput, Button } from "react-native";
+import { View, Text, TextInput, Button, Image, TouchableWithoutFeedback, TouchableOpacity } from "react-native";
 import SendSMS from 'react-native-sms'
+import SmsAndroid from 'react-native-get-sms-android';
+import {SERVER_PHONE_NUMBER} from "@env";
+import {getAllMessages} from "./utilities/datastorage/messages.js";
+import {NavigationContainer} from '@react-navigation/native';
+import Notifications from "./components/Notifications.js"
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import bell from './static/bellOutline.png'
+import bellBadge from './static/bellBadgeOutline.png'
 
-class App extends React.Component {
+class Home extends React.Component{
     constructor(props){
         super(props)
         this.state = {
@@ -14,8 +22,11 @@ class App extends React.Component {
                 style: {
                     color: "black"
                 }
-            }
+            },
+            messages: {},
+            newNotifications: false
         }
+        
     }
 
     changeName = (text) => {
@@ -36,7 +47,7 @@ class App extends React.Component {
         })
     }
 
-    showText = () => {
+    checkText = async () => {
         if(this.state.name === "") {
             this.setState({
                 messageOutput: {
@@ -45,6 +56,7 @@ class App extends React.Component {
                         color: "red"
                     }
                 }})
+            throw new Error(this.state.messageOutput.text)
         }
         else if(this.state.favColor === "") {
             this.setState({
@@ -54,6 +66,7 @@ class App extends React.Component {
                         color: "red"
                     }
                 }})
+            throw new Error(this.state.messageOutput.text)
         }
         else if(this.state.address === "") {
             this.setState({
@@ -63,11 +76,12 @@ class App extends React.Component {
                         color: "red"
                     }
                 }})
+            throw new Error(this.state.messageOutput.text)
         }
         else {
             this.setState({
                 messageOutput: {
-                    text: "name: " + this.state.name + ", color: " + this.state.favColor + ", address: " + this.state.address,
+                    text: "|" +"name: " + this.state.name + ", color: " + this.state.favColor + ", address: " + this.state.address + "|",
                     style: {
                         color: "black"
                     }
@@ -75,32 +89,182 @@ class App extends React.Component {
         }
     }
 
-    someFunction() {
-        SendSMS.send({
-            body: 'The default body of the SMS!',
-            recipients: [''],
-            successTypes: ['sent', 'queued'],
-            allowAndroidSendWithoutReadPermission: true
-        }, (completed, cancelled, error) => {
-     
-            console.log('SMS Callback: completed: ' + completed + ' cancelled: ' + cancelled + 'error: ' + error);
-     
+    //Function that constructs an SMS to send and opens the user's mobile app
+    sendSMS = async () => {
+        //call checkText, and if valid, proceed. Else, return null
+        try {
+            let check = await this.checkText()
+        } catch (e){
+            console.log(e)
+            return
+        }
+            SendSMS.send({
+                body: this.state.messageOutput.text,
+                recipients: [SERVER_PHONE_NUMBER],
+                successTypes: ['sent', 'queued'],
+                allowAndroidSendWithoutReadPermission: true
+            }, (completed, cancelled, error) => {
+         
+                console.log('SMS Callback: completed: ' + completed + ', cancelled: ' + cancelled + ', error: ' + error);
+         
+            }); 
+    }
+
+    // Function makes use of a different package to read sms from an android device
+    readSMS = (date) => {
+        return new Promise( (resolve, reject) => {
+            /* List SMS messages matching the filter */
+            var filter = {
+                box: 'inbox', // 'inbox' (default), 'sent', 'draft', 'outbox', 'failed', 'queued', and '' for all
+                minDate: date,
+                address: "+14157662732", // sender's phone number
+
+                /** the next 2 filters can be used for pagination **/
+                indexFrom: 0, // start from index 0
+                maxCount: 10, // count of SMS to return each time
+            };
+            
+            SmsAndroid.list(JSON.stringify(filter), (fail) => {
+                    console.log('Failed with this error: ' + fail);
+                }, (count, smsList) => {
+                        console.log('Count: ', count);
+                        console.log('List: ', smsList);
+                        var arr = JSON.parse(smsList);
+                        resolve(arr)
+                    
+                },
+            );
         });
     }
 
-    render(){
-        return(
-            <View>
-                <Text style={{color: "skyblue" ,fontSize: 50, justifyContent: "center"}}>Input your info</Text>
+    updateMessages = async () => {
+        //Read all messages stored locally
+        let storedMessages
+        try {
+            storedMessages = await getAllMessages()
+        } catch (e) {
+            console.log(e)
+        }
+
+        //Determine if there are any messages stored in device
+        let date;
+        if (storedMessages.length) {
+            let latestMessage = storedMessages[storedMessages.length-1]
+            date = latestMessage.date
+        }
+        else {
+            date = null
+        }
+        let newMessages;
+        //call readSMS() and capture array of new messages
+        try {
+            newMessages = await this.readSMS(date)
+            console.log("new messages:" + newMessages)
+            
+        } catch (e) {
+            console.log(e)
+        }
+        //Merge stored and new messages if applicable
+        let allMessages;
+        if (newMessages.length){
+            this.setState({
+                newNotifications: true
+            })
+            modifiedNewMessages = newMessages.map( (message) => {return (
+                message["style"] = {
+                    fontStyle: "bold"
+                }) 
+            })
+            //merge stored and new messages and update state
+            let allMessages = storedMessages.concat(modifiedNewMessages)
+            this.setState({
+                messages: allMessages
+            })
+        }
+        else {
+            this.setState({
+                messages: storedMessages
+            })
+        }
+        
+        
+    }
+
+    handleNavigation = () => {
+        this.setState({
+            newNotifications: false
+        })
+        this.props.navigation.navigate('Notifications')
+    }
+    
+    async componentDidMount(){
+        await this.updateMessages()
+
+        //TO BE REPLACED - timed check for any new messages incoming
+        //Replace with React event emitter and listener
+        //setInterval(this.updateMessages, 5000)
+    }
+
+    render() {
+        let notificationButton
+        if (this.state.newNotifications){
+            notificationButton = <Image style={{width: 35, height: 35}} source={bellBadge} />
+        }
+        else {
+            notificationButton = <Image style={{width: 35, height: 35}} source={bell}/>
+        }
+
+        return (
+            <View
+                style={{
+                    padding: 20
+                }}>
+                <View
+                    style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between'
+                    }}>
+                    <Text style={{ color: "skyblue", fontSize: 30 }}>Input your info</Text>
+                    <TouchableOpacity
+                        style={{ flex: 0.2, padding: 7 }}
+                        onPress={this.handleNavigation}>
+                            {notificationButton}
+                    </TouchableOpacity>
+                </View>
                 <TextInput placeholder="enter your name" onChangeText={this.changeName}></TextInput>
                 <TextInput placeholder="enter your favorite color" onChangeText={this.changeFavColor}></TextInput>
                 <TextInput placeholder="enter your address" onChangeText={this.changeAddress}></TextInput>
                 <Button
-                color="skyblue"
-                title="See results"
-                onPress={this.someFunction}></Button>
+                    color="skyblue"
+                    title="See results"
+                    onPress={this.sendSMS}></Button>
                 <Text style={this.state.messageOutput.style}>{this.state.messageOutput.text}</Text>
             </View>
+        )
+    }
+}
+
+class App extends React.Component {
+    constructor(props){
+        super(props)
+    }
+    
+    render(){
+        const Stack = createNativeStackNavigator();
+        return(
+            <NavigationContainer>
+                <Stack.Navigator>
+                    <Stack.Screen
+                        visable="false"
+                        name="Home"
+                        component={Home}
+                    />
+                    <Stack.Screen
+                        name="Notifications"
+                        component={Notifications}
+                    />
+                </Stack.Navigator>
+            </NavigationContainer>
         )
     }
 }
