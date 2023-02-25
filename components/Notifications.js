@@ -15,18 +15,11 @@ class Notifications extends React.Component {
 
     async componentDidMount() {
         //Load all messages stored in device
-        let res = await getAllMessages()
-        let ids = res.map(
-            (message, index) => {
-                return (
-                    {
-                        id: index,
-                        message: message
-                    }
-                )
-            })
+        let messages = await getAllMessages()
+        messages.forEach(
+           (message, index) => { message["id"] = index; console.log(message); })
         this.setState({
-            notifications: ids
+            notifications: messages
         })
     }
 
@@ -40,7 +33,7 @@ class Notifications extends React.Component {
 
     renderItem = ({ item }) => {
         return (
-            <TouchableOpacity onPress={() => this.handlePress(item.id, item.message)}>
+            <TouchableOpacity onPress={() => this.handlePress(item.id, item.body)}>
                 <View style={{
                     backgroundColor: 'skyblue',
                     padding: 25,
@@ -49,7 +42,7 @@ class Notifications extends React.Component {
                     <Text style={{
                         fontSize: 18
                     }}>
-                        New message received!
+                        {item.date}
                     </Text>
                 </View>
             </TouchableOpacity>

@@ -1,9 +1,9 @@
-import React from "react";
+import React, { cloneElement } from "react";
 import { View, Text, TextInput, Button, Image, TouchableWithoutFeedback, TouchableOpacity } from "react-native";
 import SendSMS from 'react-native-sms'
 import SmsAndroid from 'react-native-get-sms-android';
 import {SERVER_PHONE_NUMBER} from "@env";
-import {getAllMessages} from "./utilities/datastorage/messages.js";
+import {putMessage, getAllMessages} from "./utilities/datastorage/messages.js";
 import {NavigationContainer} from '@react-navigation/native';
 import Notifications from "./components/Notifications.js"
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -128,7 +128,6 @@ class Home extends React.Component{
                     console.log('Failed with this error: ' + fail);
                 }, (count, smsList) => {
                         console.log('Count: ', count);
-                        console.log('List: ', smsList);
                         var arr = JSON.parse(smsList);
                         resolve(arr)
                     
@@ -151,32 +150,34 @@ class Home extends React.Component{
         if (storedMessages.length) {
             let latestMessage = storedMessages[storedMessages.length-1]
             date = latestMessage.date
+            console.log(date)
         }
         else {
             date = null
         }
-        let newMessages;
         //call readSMS() and capture array of new messages
+        let newMessages;
         try {
             newMessages = await this.readSMS(date)
-            console.log("new messages:" + newMessages)
-            
         } catch (e) {
             console.log(e)
         }
-        //Merge stored and new messages if applicable
+        //Merge stored and new messages if applicable, and modify style of new messages
         let allMessages;
         if (newMessages.length){
             this.setState({
                 newNotifications: true
             })
-            modifiedNewMessages = newMessages.map( (message) => {return (
+            newMessages.forEach( (message) => {
                 message["style"] = {
                     fontStyle: "bold"
-                }) 
+                }
             })
-            //merge stored and new messages and update state
-            let allMessages = storedMessages.concat(modifiedNewMessages)
+            //merge stored and new messages, store in device, and update state
+            let allMessages = storedMessages.concat(newMessages)
+            allMessages.forEach( (element, index) => {
+                putMessage(index, element)
+            })
             this.setState({
                 messages: allMessages
             })
@@ -186,8 +187,6 @@ class Home extends React.Component{
                 messages: storedMessages
             })
         }
-        
-        
     }
 
     handleNavigation = () => {

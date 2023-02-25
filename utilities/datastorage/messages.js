@@ -6,7 +6,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 //function to store messages on device
 export async function putMessage(key, value) {
         try {
-          await AsyncStorage.setItem(key, value)
+          const jsonValue = JSON.stringify(value)
+          const keyString = key.toString();
+          await AsyncStorage.setItem(keyString, jsonValue)
         } catch (e) {
           console.log(e)
         }   
@@ -16,10 +18,7 @@ export async function putMessage(key, value) {
 export async function getMessage(key) {
     try {
         const res = await AsyncStorage.getItem(key)
-        if (res !== null) {
-            console.log(res)
-            return res
-        }
+        return res != null ? JSON.parse(res) : null
     } catch(e) {
         console.log(e)
     }
@@ -30,8 +29,10 @@ export async function getAllMessages() {
     let keys = []
     try {
         keys = await AsyncStorage.getAllKeys()
-        let pairs = await AsyncStorage.multiGet(keys)
-        let values = pairs.map( (pair) => {return(pair[1])} )
+        var values = keys.map( async (key) => {
+            let res = await getMessage(key)
+            return res
+        });
         return values
     } catch(e){
         console.log(e)
