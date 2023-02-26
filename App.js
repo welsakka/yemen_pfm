@@ -9,6 +9,8 @@ import Notifications from "./components/Notifications.js"
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import bell from './static/bellOutline.png'
 import bellBadge from './static/bellBadgeOutline.png'
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 class Home extends React.Component{
     constructor(props){
@@ -117,7 +119,7 @@ class Home extends React.Component{
             var filter = {
                 box: 'inbox', // 'inbox' (default), 'sent', 'draft', 'outbox', 'failed', 'queued', and '' for all
                 minDate: date,
-                address: "+14157662732", // sender's phone number
+                address: "+15708013993", // sender's phone number
 
                 /** the next 2 filters can be used for pagination **/
                 indexFrom: 0, // start from index 0
@@ -146,11 +148,11 @@ class Home extends React.Component{
         }
 
         //Determine if there are any messages stored in device
-        let date;
+        var date;
         if (storedMessages.length) {
             let latestMessage = storedMessages[storedMessages.length-1]
             date = latestMessage.date
-            console.log(date)
+            console.log("updateMessages: Date = " + date)
         }
         else {
             date = null
@@ -158,12 +160,20 @@ class Home extends React.Component{
         //call readSMS() and capture array of new messages
         let newMessages;
         try {
-            newMessages = await this.readSMS(date)
+            //date of lastest message should not be included in search
+            if (date != null) {
+                newMessages = await this.readSMS(date + 1) 
+            }
+            else{
+                newMessages = await this.readSMS(date) 
+            }
+            
         } catch (e) {
             console.log(e)
         }
+        console.log("UpdateMessage: newMessages =")
+        console.log(newMessages)
         //Merge stored and new messages if applicable, and modify style of new messages
-        let allMessages;
         if (newMessages.length){
             this.setState({
                 newNotifications: true
@@ -175,6 +185,8 @@ class Home extends React.Component{
             })
             //merge stored and new messages, store in device, and update state
             let allMessages = storedMessages.concat(newMessages)
+            console.log("UpdateMessage: allMessages =")
+            console.log(allMessages)
             allMessages.forEach( (element, index) => {
                 putMessage(index, element)
             })
@@ -195,13 +207,24 @@ class Home extends React.Component{
         })
         this.props.navigation.navigate('Notifications')
     }
+
+    clearAll = async () => {
+        try {
+          await AsyncStorage.clear()
+        } catch(e) {
+          // clear error
+        }
+      
+        console.log('Done.')
+      }
     
     async componentDidMount(){
         await this.updateMessages()
+        //await this.clearAll()
 
-        //TO BE REPLACED - timed check for any new messages incoming
+        //TO BE REPLACED
         //Replace with React event emitter and listener
-        //setInterval(this.updateMessages, 5000)
+        setInterval(this.updateMessages, 5000)
     }
 
     render() {

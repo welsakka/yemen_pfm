@@ -1,5 +1,5 @@
 import React from "react";
-import { getMessage, getAllMessages } from "../utilities/datastorage/messages.js";
+import { getMessage, getAllMessages, putMessage } from "../utilities/datastorage/messages.js";
 import { View, Text, FlatList, TouchableOpacity, Modal, Button, TouchableWithoutFeedback} from "react-native";
 
 class Notifications extends React.Component {
@@ -16,15 +16,19 @@ class Notifications extends React.Component {
     async componentDidMount() {
         //Load all messages stored in device
         let messages = await getAllMessages()
+        console.log(messages)
         messages.forEach(
-           (message, index) => { message["id"] = index; console.log(message); })
+           (message, index) => { message["id"] = index; console.log("Notifications: Message = "); console.log(message) })
         this.setState({
             notifications: messages
         })
     }
 
-    handlePress = (id, content) => {
-        this.setState({ selectedId: id, modalVisible: true, modalContent: content });
+    handlePress = (item) => {
+        //change item's fontStyle to show it has been read
+        item.style.fontStyle = "normal"
+        putMessage(item.id, item)
+        this.setState({ selectedId: item.id, modalVisible: true, modalContent: item.body });
     };
 
     closeModal = () => {
@@ -33,16 +37,17 @@ class Notifications extends React.Component {
 
     renderItem = ({ item }) => {
         return (
-            <TouchableOpacity onPress={() => this.handlePress(item.id, item.body)}>
+            <TouchableOpacity onPress={() => this.handlePress(item)}>
                 <View style={{
                     backgroundColor: 'skyblue',
                     padding: 25,
                     borderWidth: 0.5
                 }}>
                     <Text style={{
-                        fontSize: 18
+                        fontSize: 18,
+                        fontWeight: item.style.fontStyle
                     }}>
-                        {item.date}
+                        New Message!
                     </Text>
                 </View>
             </TouchableOpacity>
@@ -86,6 +91,7 @@ class Notifications extends React.Component {
         return (
             <View>
                 <FlatList
+                    inverted
                     data={this.state.notifications}
                     renderItem={this.renderItem}
                     keyExtractor={(item) => item.id}
