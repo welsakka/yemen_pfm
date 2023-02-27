@@ -19,8 +19,6 @@ export async function getMessage(key) {
     try {
         const res = await AsyncStorage.getItem(key)
         const value = JSON.parse(res)
-        console.log("GetMessage: value =")
-        console.log(value)
         return value
     } catch(e) {
         console.log(e)
@@ -28,18 +26,17 @@ export async function getMessage(key) {
 }
 
 //Function to get all stored messages from device memory
-//TODO INVESTIGATE THIS FUNCTION
 export async function getAllMessages() {
     let keys = []
     try {
         keys = await AsyncStorage.getAllKeys()
         let pairs = await AsyncStorage.multiGet(keys)
-        console.log("getAllMessages: pairs = " + pairs)
+        //Parse String into object
         let pairsParsed = pairs.map( (pair) => {
             return [pair[0], JSON.parse(pair[1])] 
         })
+        //Return only array of values, no keys
         let values = pairsParsed.map( (pair) => { return(pair[1])} )
-        console.log("getAllMessages: values = " + values)
         return values
     } catch(e){
         console.log(e)

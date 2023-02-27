@@ -26,7 +26,7 @@ class Notifications extends React.Component {
 
     handlePress = (item) => {
         //change item's fontStyle to show it has been read
-        item.style.fontStyle = "normal"
+        item.isRead = true
         putMessage(item.id, item)
         this.setState({ selectedId: item.id, modalVisible: true, modalContent: item.body });
     };
@@ -36,20 +36,42 @@ class Notifications extends React.Component {
     };
 
     renderItem = ({ item }) => {
+        let notification
+        if (item.isRead) {
+            notification = 
+            <View style={{
+                backgroundColor: 'white',
+                padding: 25,
+                borderWidth: 0.5
+            }}>
+                <Text style={{
+                    fontSize: 18,
+                    fontWeight: "normal"
+                }}>
+                    New Message!
+                </Text>
+            </View>
+        }
+        else {
+            notification =
+            <View style={{
+                backgroundColor: 'skyblue',
+                padding: 25,
+                borderWidth: 0.5
+            }}>
+                <Text style={{
+                    fontSize: 18,
+                    fontWeight: "bold"
+                }}>
+                    New Message!
+                </Text>
+            </View>
+
+        }
+
         return (
             <TouchableOpacity onPress={() => this.handlePress(item)}>
-                <View style={{
-                    backgroundColor: 'skyblue',
-                    padding: 25,
-                    borderWidth: 0.5
-                }}>
-                    <Text style={{
-                        fontSize: 18,
-                        fontWeight: item.style.fontStyle
-                    }}>
-                        New Message!
-                    </Text>
-                </View>
+                {notification}
             </TouchableOpacity>
         );
     };

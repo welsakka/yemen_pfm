@@ -2,7 +2,7 @@ import React, { cloneElement } from "react";
 import { View, Text, TextInput, Button, Image, TouchableWithoutFeedback, TouchableOpacity } from "react-native";
 import SendSMS from 'react-native-sms'
 import SmsAndroid from 'react-native-get-sms-android';
-import {SERVER_PHONE_NUMBER} from "@env";
+import {SERVER_PHONE_NUMBER, AES_PASSWORD, AES_SALT} from "@env";
 import {putMessage, getAllMessages} from "./utilities/datastorage/messages.js";
 import {NavigationContainer} from '@react-navigation/native';
 import Notifications from "./components/Notifications.js"
@@ -10,6 +10,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import bell from './static/bellOutline.png'
 import bellBadge from './static/bellBadgeOutline.png'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { generateKey, encryptData } from "./utilities/encryption/encryption.js";
 
 
 class Home extends React.Component{
@@ -25,8 +26,8 @@ class Home extends React.Component{
                     color: "black"
                 }
             },
-            messages: {},
-            newNotifications: false
+            newNotifications: false,
+            output: ""
         }
         
     }
@@ -82,12 +83,8 @@ class Home extends React.Component{
         }
         else {
             this.setState({
-                messageOutput: {
-                    text: "|" +"name: " + this.state.name + ", color: " + this.state.favColor + ", address: " + this.state.address + "|",
-                    style: {
-                        color: "black"
-                    }
-                }})
+                output: "|" +"name: " + this.state.name + ", color: " + this.state.favColor + ", address: " + this.state.address + "|"
+            })
         }
     }
 
@@ -96,20 +93,25 @@ class Home extends React.Component{
         //call checkText, and if valid, proceed. Else, return null
         try {
             let check = await this.checkText()
+            generateKey(AES_PASSWORD, AES_SALT, 5000, 256)
+            .then(key => {
+                console.log('Key:', key)
+                encryptData(this.state.output, key)
+                .then(({ cipher, iv }) => {
+                    SendSMS.send({
+                        body: cipher,
+                        recipients: [SERVER_PHONE_NUMBER],
+                        successTypes: ['sent', 'queued'],
+                        allowAndroidSendWithoutReadPermission: true
+                    }, (completed, cancelled, error) => {
+                        console.log('SMS Callback: completed: ' + completed + ', cancelled: ' + cancelled + ', error: ' + error);
+                    });
+                });
+            });
         } catch (e){
             console.log(e)
             return
         }
-            SendSMS.send({
-                body: this.state.messageOutput.text,
-                recipients: [SERVER_PHONE_NUMBER],
-                successTypes: ['sent', 'queued'],
-                allowAndroidSendWithoutReadPermission: true
-            }, (completed, cancelled, error) => {
-         
-                console.log('SMS Callback: completed: ' + completed + ', cancelled: ' + cancelled + ', error: ' + error);
-         
-            }); 
     }
 
     // Function makes use of a different package to read sms from an android device
@@ -123,7 +125,7 @@ class Home extends React.Component{
 
                 /** the next 2 filters can be used for pagination **/
                 indexFrom: 0, // start from index 0
-                maxCount: 10, // count of SMS to return each time
+                maxCount: 1, // count of SMS to return each time
             };
             
             SmsAndroid.list(JSON.stringify(filter), (fail) => {
@@ -152,7 +154,6 @@ class Home extends React.Component{
         if (storedMessages.length) {
             let latestMessage = storedMessages[storedMessages.length-1]
             date = latestMessage.date
-            console.log("updateMessages: Date = " + date)
         }
         else {
             date = null
@@ -171,22 +172,16 @@ class Home extends React.Component{
         } catch (e) {
             console.log(e)
         }
-        console.log("UpdateMessage: newMessages =")
-        console.log(newMessages)
         //Merge stored and new messages if applicable, and modify style of new messages
         if (newMessages.length){
             this.setState({
                 newNotifications: true
             })
             newMessages.forEach( (message) => {
-                message["style"] = {
-                    fontStyle: "bold"
-                }
+                message["isRead"] = false
             })
             //merge stored and new messages, store in device, and update state
             let allMessages = storedMessages.concat(newMessages)
-            console.log("UpdateMessage: allMessages =")
-            console.log(allMessages)
             allMessages.forEach( (element, index) => {
                 putMessage(index, element)
             })
@@ -239,7 +234,9 @@ class Home extends React.Component{
         return (
             <View
                 style={{
-                    padding: 20
+                    flex: 1,
+                    padding: 20,
+                    backgroundColor: "white"
                 }}>
                 <View
                     style={{
@@ -280,10 +277,12 @@ class App extends React.Component {
                         visable="false"
                         name="Home"
                         component={Home}
+                        options={{ headerShown: false }}
                     />
                     <Stack.Screen
                         name="Notifications"
                         component={Notifications}
+                        
                     />
                 </Stack.Navigator>
             </NavigationContainer>
