@@ -1,3 +1,6 @@
+//Encryption functions
+// soruced from : https://github.com/tectiv3/react-native-aes
+
 import Aes from 'react-native-aes-crypto'
 
 export const generateKey = (password, salt, cost, length) => Aes.pbkdf2(password, salt, cost, length)

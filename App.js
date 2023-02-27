@@ -11,6 +11,8 @@ import bell from './static/bellOutline.png'
 import bellBadge from './static/bellBadgeOutline.png'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateKey, encryptData } from "./utilities/encryption/encryption.js";
+import { ListItem } from '@rneui/themed';
+import { Dropdown } from "./components/Dropdown.js"
 
 
 class Home extends React.Component{
@@ -48,6 +50,7 @@ class Home extends React.Component{
         this.setState({
             address: text
         })
+        console.log(text)
     }
 
     checkText = async () => {
@@ -250,9 +253,13 @@ class Home extends React.Component{
                             {notificationButton}
                     </TouchableOpacity>
                 </View>
-                <TextInput placeholder="enter your name" onChangeText={this.changeName}></TextInput>
-                <TextInput placeholder="enter your favorite color" onChangeText={this.changeFavColor}></TextInput>
-                <TextInput placeholder="enter your address" onChangeText={this.changeAddress}></TextInput>
+                <Dropdown label={"Organization"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
+                <Dropdown label={"Project"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
+                <Dropdown label={"Fund"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
+                <Dropdown label={"Chapter"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
+                <Dropdown label={"Part"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
+                <Dropdown label={"Type"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
+                <Dropdown label={"Item"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
                 <Button
                     color="skyblue"
                     title="See results"
