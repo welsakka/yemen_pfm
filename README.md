@@ -4,7 +4,7 @@ Yemen PFM hackathon submission: https://yemenpfmhackathon.com/
 
 Try out the project:
 
-git clone
-cd yemen_pfm
-npm install
-react-native start
+- git clone https://github.com/welsakka/yemen_pfm.git
+- cd yemen_pfm
+- npm install
+- react-native start
