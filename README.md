@@ -7,4 +7,5 @@ Try out the project:
 - git clone https://github.com/welsakka/yemen_pfm.git
 - cd yemen_pfm
 - npm install
+- edit .env variables
 - react-native start
