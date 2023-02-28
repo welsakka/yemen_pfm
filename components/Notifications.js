@@ -81,7 +81,7 @@ class Notifications extends React.Component {
         return (
             <Modal
                 animationType="fade"
-                transparent={true}
+                transparent={false}
                 visible={this.state.modalVisible}
                 onRequestClose={this.closeModal}
             >
@@ -98,7 +98,7 @@ class Notifications extends React.Component {
                             padding: 20,
                             flex: 0.7}}>
                             <Text style={{
-                                fontSize: 20,
+                                fontSize: 30,
                                 flex: 0.7}}>
                                     {this.state.modalContent}
                             </Text>

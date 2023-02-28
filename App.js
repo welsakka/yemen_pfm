@@ -1,5 +1,5 @@
 import React, { cloneElement } from "react";
-import { View, Text, TextInput, Button, Image, TouchableWithoutFeedback, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, Button, Image, TouchableWithoutFeedback, TouchableOpacity, ScrollView } from "react-native";
 import SendSMS from 'react-native-sms'
 import SmsAndroid from 'react-native-get-sms-android';
 import {SERVER_PHONE_NUMBER, AES_PASSWORD, AES_SALT} from "@env";
@@ -11,83 +11,52 @@ import bell from './static/bellOutline.png'
 import bellBadge from './static/bellBadgeOutline.png'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateKey, encryptData } from "./utilities/encryption/encryption.js";
-import { ListItem } from '@rneui/themed';
 import { Dropdown } from "./components/Dropdown.js"
-
+import { Header } from '@rneui/themed';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 class Home extends React.Component{
     constructor(props){
         super(props)
         this.state = {
-            name: "",
-            favColor: "",
-            address: "",
-            messageOutput: {
-                text: "",
-                style: {
-                    color: "black"
-                }
-            },
+            organization: "",
+            project: "",
+            fund: "",
+            chapter: "",
+            part: "",
+            type: "",
+            item: "",
+            errorMsg: "",
             newNotifications: false,
             output: ""
         }
-        
     }
 
-    changeName = (text) => {
-        this.setState({
-            name: text
-        })
-    }
+    changeOrganization = (input) => { this.setState({ organization: input }) }
+    changeProject = (input) => { this.setState({ project: input }) }
+    changeFund = (input) => { this.setState({ fund: input }) }
+    changeChapter = (input) => { this.setState({ chapter: input }) }
+    changePart = (input) => { this.setState({ part: input }) }
+    changeType = (input) => { this.setState({ type: input }) }
+    changeItem = (input) => { this.setState({ item: input }) }
 
-    changeFavColor = (text) => {
-        this.setState({
-            favColor: text
-        })
-    }
-
-    changeAddress = (text) => {
-        this.setState({
-            address: text
-        })
-        console.log(text)
-    }
-
-    checkText = async () => {
-        if(this.state.name === "") {
-            this.setState({
-                messageOutput: {
-                    text: "Please input a name",
-                    style: {
-                        color: "red"
-                    }
-                }})
-            throw new Error(this.state.messageOutput.text)
-        }
-        else if(this.state.favColor === "") {
-            this.setState({
-                messageOutput: {
-                    text: "Please input a favorite color",
-                    style: {
-                        color: "red"
-                    }
-                }})
-            throw new Error(this.state.messageOutput.text)
-        }
-        else if(this.state.address === "") {
-            this.setState({
-                messageOutput: {
-                    text: "Please input an address",
-                    style: {
-                        color: "red"
-                    }
-                }})
-            throw new Error(this.state.messageOutput.text)
-        }
+    checkInput = async () => {
+        if (this.state.organization === "") {this.setState( {errorMsg: "Please input organization"} ); throw new Error(this.state.errorMsg)}
+        else if (this.state.project === "") {this.setState( {errorMsg: "Please input project"} ); throw new Error(this.state.errorMsg)}
+        else if (this.state.fund === "") {this.setState( {errorMsg: "Please input fund"} ); throw new Error(this.state.errorMsg)}
+        else if (this.state.chapter === "") {this.setState( {errorMsg: "Please input chapter"} ); throw new Error(this.state.errorMsg)}
+        else if (this.state.part === "") {this.setState( {errorMsg: "Please input part"} ); throw new Error(this.state.errorMsg)}
+        else if (this.state.time === "") {this.setState( {errorMsg: "Please input time"} ); throw new Error(this.state.errorMsg)}
+        else if (this.state.item === "") {this.setState( {errorMsg: "Please input item"} ); throw new Error(this.state.errorMsg)}
         else {
             this.setState({
-                output: "|" +"name: " + this.state.name + ", color: " + this.state.favColor + ", address: " + this.state.address + "|"
+                errorMsg: ""
             })
+            this.setState({
+                output: this.state.organization + this.state.project + this.state.fund + this.state.chapter + this.state.part + this.state.type + this.state.item,
+                errorMsg: this.state.organization + this.state.project + this.state.fund + this.state.chapter + this.state.part + this.state.type + this.state.item
+            })
+            return;
         }
     }
 
@@ -95,7 +64,7 @@ class Home extends React.Component{
     sendSMS = async () => {
         //call checkText, and if valid, proceed. Else, return null
         try {
-            let check = await this.checkText()
+            let check = await this.checkInput()
             generateKey(AES_PASSWORD, AES_SALT, 5000, 256)
             .then(key => {
                 console.log('Key:', key)
@@ -124,7 +93,7 @@ class Home extends React.Component{
             var filter = {
                 box: 'inbox', // 'inbox' (default), 'sent', 'draft', 'outbox', 'failed', 'queued', and '' for all
                 minDate: date,
-                address: "+15708013993", // sender's phone number
+                address: SERVER_PHONE_NUMBER, // sender's phone number
 
                 /** the next 2 filters can be used for pagination **/
                 indexFrom: 0, // start from index 0
@@ -228,44 +197,74 @@ class Home extends React.Component{
     render() {
         let notificationButton
         if (this.state.newNotifications){
-            notificationButton = <Image style={{width: 35, height: 35}} source={bellBadge} />
+            notificationButton = <Image style={{width: 35, height: 35, tintColor: "white"}} source={bellBadge} />
         }
         else {
-            notificationButton = <Image style={{width: 35, height: 35}} source={bell}/>
+            notificationButton = <Image style={{width: 35, height: 35, tintColor: "white"}} source={bell}/>
         }
 
         return (
-            <View
+            <SafeAreaProvider>
+                <Header
+                backgroundColor="#A7C7E7"
                 style={{
-                    flex: 1,
-                    padding: 20,
-                    backgroundColor: "white"
-                }}>
-                <View
-                    style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between'
-                    }}>
-                    <Text style={{ color: "skyblue", fontSize: 30 }}>Input your info</Text>
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: 20,
+                    width: '100%',
+                    paddingVertical: 15,
+                }}
+
+                rightComponent={                        
                     <TouchableOpacity
-                        style={{ flex: 0.2, padding: 7 }}
+                        style={{ 
+                            display: 'flex',
+                            flexDirection: 'row',
+                            marginTop: 10,
+                         }}
                         onPress={this.handleNavigation}>
-                            {notificationButton}
-                    </TouchableOpacity>
-                </View>
-                <Dropdown label={"Organization"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
-                <Dropdown label={"Project"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
-                <Dropdown label={"Fund"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
-                <Dropdown label={"Chapter"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
-                <Dropdown label={"Part"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
-                <Dropdown label={"Type"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
-                <Dropdown label={"Item"} options={["1", "2", "3", "4"]} onSelect={this.changeAddress}/>
-                <Button
-                    color="skyblue"
-                    title="See results"
-                    onPress={this.sendSMS}></Button>
-                <Text style={this.state.messageOutput.style}>{this.state.messageOutput.text}</Text>
-            </View>
+                        {notificationButton}
+                    </TouchableOpacity>}
+                
+                centerComponent={                        
+                    <Text
+                        style={{
+                            color: "white",
+                            fontSize: 35,
+                            fontWeight: "bold"
+                        }}>
+                    Create Input
+                    </Text>}
+                     >
+                        
+                </Header>
+                <ScrollView
+                    style={{
+                        flex: 1,
+                        padding: 20,
+                        backgroundColor: "white"
+                    }}>
+                    <View
+                        style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            padding: 10
+                        }}>
+                    </View>
+                    <Dropdown label={"Organization"} options={["1", "2", "3", "4"]} onSelect={this.changeOrganization} />
+                    <Dropdown label={"Project"} options={["1", "2", "3", "4"]} onSelect={this.changeProject} />
+                    <Dropdown label={"Fund"} options={["1", "2", "3", "4"]} onSelect={this.changeFund} />
+                    <Dropdown label={"Chapter"} options={["1", "2", "3", "4"]} onSelect={this.changeChapter} />
+                    <Dropdown label={"Part"} options={["1", "2", "3", "4"]} onSelect={this.changePart} />
+                    <Dropdown label={"Type"} options={["1", "2", "3", "4"]} onSelect={this.changeType} />
+                    <Dropdown label={"Item"} options={["1", "2", "3", "4"]} onSelect={this.changeItem} />
+                    <Button
+                        color="#A7C7E7"
+                        title="Send"
+                        onPress={this.sendSMS}></Button>
+                    <Text style={{ color: "red", padding: 10 }}>{this.state.errorMsg}</Text>
+                </ScrollView>
+            </SafeAreaProvider>
         )
     }
 }
@@ -289,7 +288,6 @@ class App extends React.Component {
                     <Stack.Screen
                         name="Notifications"
                         component={Notifications}
-                        
                     />
                 </Stack.Navigator>
             </NavigationContainer>
